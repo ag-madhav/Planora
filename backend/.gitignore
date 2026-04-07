@@ -1,18 +1,45 @@
-# Dependencies
-node_modules/
-
-# Production
-build/
-dist/
-
-# AI Metadata (The dot folders)
+# --- 1. THE AI "JUNK" FILTER ---
+# This ignores every folder starting with a dot (like .adal, .roo, .claude)
 .*
+# But we MUST keep these specific important dot-files
 !/.gitignore
 !/.github
+!/.git
 
-# Submodule leftovers
-.gitmodules
+# --- 2. DEPENDENCIES (The Heavy Stuff) ---
+node_modules/
+client/node_modules/
+backend/node_modules/
+package-lock.json
+client/package-lock.json
+backend/package-lock.json
 
-# Specific junk
+# --- 3. PRODUCTION & BUILDS ---
+# We don't upload the "translated" code, only the source code
+dist/
+build/
+client/dist/
+client/build/
+.cache/
+
+# --- 4. SECURITY (The most important part) ---
+# Never upload your Gemini API Keys or Firebase secrets!
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+firebase-debug.log*
+.firebase/
+
+# --- 5. AI TOOL SPECIFIC METADATA ---
+# These are the files created by tools like Roo-Code or Claude Dev
 skills/
 skills-lock.json
+.windsurf/
+.continue/
+.trae/
+
+# --- 6. SYSTEM JUNK ---
+.DS_Store
+Thumbs.db
