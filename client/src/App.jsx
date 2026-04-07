@@ -74,7 +74,7 @@ function App() {
     const handleLogout = async () => {
         try {
             await logout();
-        } catch (e) {}
+        } catch (e) { }
         setPage("home");
     };
 
@@ -232,26 +232,59 @@ function App() {
 
     // ---------- GENERATE FLOOR PLAN ----------
     const generateFloorPlan = async () => {
+        // 🔍 TRACER 1: Is the function even starting?
+        console.log("🚀 generateFloorPlan started!");
+
         if (!houseType || !style) {
-            alert("Please complete onboarding first — select a house type and style.");
+            console.log("❌ Missing houseType or style. Current values:", { houseType, style });
+            alert("Please complete onboarding first!");
             setPage("onboarding");
             return;
         }
+
         try {
             setLoadingPlan(true);
             setFloors([]);
             setSuggestion("");
 
-            const response = await fetch("http://localhost:3001/generate-plan", {
+            const formData = {
+                houseType,
+                style,
+                bedrooms,
+                numFloors,
+                plotArea,
+                floorNumber,
+                carpetArea,
+                hasBalcony,
+                hasGarden,
+                hasParking,
+                propertyAge,
+                description,
+                familySize: "Standard"
+            };
+
+            // 🔍 TRACER 2: What data are we actually sending?
+            console.log("📤 Sending this data to Render:", formData);
+
+            // --- SAFETY NET (TIMEOUT) START ---
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => {
+                controller.abort();
+                console.log("⏱️ Request timed out after 60 seconds.");
+            }, 120000);
+            // --- SAFETY NET END ---
+
+            const response = await fetch("https://planora-api.onrender.com/generate-plan", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    houseType,
-                    style,
-                    familySize: bedrooms || "4",
-                    bedrooms: bedrooms || "3",
-                }),
+                body: JSON.stringify(formData),
+                signal: controller.signal // Connect the timeout signal
             });
+
+            clearTimeout(timeoutId); // Stop the timer if it works!
+
+            // 🔍 TRACER 3: Did the server say anything?
+            console.log("📥 Server responded with status:", response.status);
 
             if (!response.ok) {
                 const errData = await response.json();
@@ -259,28 +292,32 @@ function App() {
             }
 
             const data = await response.json();
-            console.log("AI Response:", data);
+            console.log("✅ AI Data Received:", data);
 
-            // data.output is already a parsed object from the server
             const parsed = data.output;
-
-            if (!parsed || !parsed.floors || parsed.floors.length === 0) {
-                throw new Error("No floor plan data returned from AI");
-            }
+            if (!parsed || !parsed.floors) throw new Error("Invalid AI data format");
 
             setFloors(parsed.floors);
-            const totalRooms = parsed.floors.reduce((acc, f) => acc + f.rooms.length, 0);
+            const totalRooms = parsed.floors.reduce((acc, f) => acc + (f.rooms?.length || 0), 0);
+
             setSuggestion(
-                `AI-generated ${style} ${houseType} with ${parsed.floors.length} floor(s) and ${totalRooms} rooms. Tailored for ${bedrooms || "3"} bedrooms.`
+                `AI-generated ${style} ${houseType} with ${parsed.floors.length} floor(s) and ${totalRooms} rooms.`
             );
+
         } catch (err) {
-            console.error("Generate error:", err);
-            alert("Failed to generate plan: " + err.message);
+            // 🔍 TRACER 4: Where did it crash?
+            console.error("💥 CATASTROPHIC ERROR:", err);
+
+            if (err.name === 'AbortError') {
+                alert("The server is taking too long to wake up. Try again in 10 seconds.");
+            } else {
+                alert("Failed to generate plan: " + err.message);
+            }
         } finally {
             setLoadingPlan(false);
+            console.log("🏁 generateFloorPlan finished.");
         }
     };
-
     // ---------- SHARED STYLES ----------
     const inputStyle = {
         width: "100%", padding: "14px 16px", marginTop: "6px", marginBottom: "16px",
