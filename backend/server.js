@@ -46,7 +46,7 @@ app.post("/generate-plan", async (req, res) => {
 
         // ✅ KEY CHANGE: Add generationConfig to force JSON output
         const model = genAI.getGenerativeModel({
-            model: "gemini-3-flash-preview", // Using the 2026 flagship model
+            model: "gemini-2.5-flash", // Using the 2026 flagship model
             generationConfig: {
                 responseMimeType: "application/json"
             }
