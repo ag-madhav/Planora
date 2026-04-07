@@ -6,6 +6,8 @@ function App() {
     const [style, setStyle] = useState("")
     const [rooms, setRooms] = useState([])
 
+    const [selectedRoom, setSelectedRoom] = useState(null)
+
     return (
         <div style={{ padding: "20px", fontFamily: "Arial" }}>
             <h1>🏠 Planora</h1>
@@ -53,7 +55,7 @@ function App() {
 
             <h2>Rooms:</h2>
 
-            <h2>Rooms:</h2>
+            <p>Click a room to select it</p>
 
             <div style={{
                 display: "flex",
@@ -64,6 +66,7 @@ function App() {
                 {rooms.map((room, index) => (
                     <div
                         key={index}
+                        onClick={() => setSelectedRoom(index)}
                         style={{
                             border: "2px solid black",
                             padding: "20px",
@@ -72,7 +75,17 @@ function App() {
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
-                            backgroundColor: "#f0f0f0"
+                            backgroundColor:
+                                selectedRoom === index
+                                    ? "#ffd700"
+                                    : room === "Bedroom"
+                                        ? "#add8e6"
+                                        : room === "Hall"
+                                            ? "#90ee90"
+                                            : room === "Kitchen"
+                                                ? "#ffcc99"
+                                                : "#f0f0f0",
+                            cursor: "pointer"
                         }}
                     >
                         {room}
