@@ -1,32 +1,18 @@
 # Dependencies
 node_modules/
-.pnp
-.pnp.js
 
-# Testing
-coverage
-
-# Production / Build
+# Production
 build/
 dist/
 
-# Env / Secrets (CRITICAL)
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# AI Tool Junk (The dot folders)
+# AI Metadata (The dot folders)
 .*
 !/.gitignore
 !/.github
-!/client
-!/backend
 
-# Skills metadata
+# Submodule leftovers
+.gitmodules
+
+# Specific junk
 skills/
 skills-lock.json
-
-# Misc
-.DS_Store
