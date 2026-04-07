@@ -6,6 +6,8 @@ import {
     signInWithEmailAndPassword,
     updateProfile,
 } from "firebase/auth";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
 
 function App() {
     const [user, setUser] = useState(null);
@@ -298,12 +300,11 @@ function App() {
             if (!parsed || !parsed.floors) throw new Error("Invalid AI data format");
 
             setFloors(parsed.floors);
+
+            // Combine the AI advice with the stats for a professional look
             const totalRooms = parsed.floors.reduce((acc, f) => acc + (f.rooms?.length || 0), 0);
-
-            setSuggestion(
-                `AI-generated ${style} ${houseType} with ${parsed.floors.length} floor(s) and ${totalRooms} rooms.`
-            );
-
+            const stats = `[${parsed.floors.length} Floors | ${totalRooms} Rooms] `;
+            setSuggestion(stats + (parsed.architecturalAdvice || ""));
         } catch (err) {
             // 🔍 TRACER 4: Where did it crash?
             console.error("💥 CATASTROPHIC ERROR:", err);
@@ -317,6 +318,55 @@ function App() {
             setLoadingPlan(false);
             console.log("🏁 generateFloorPlan finished.");
         }
+    };
+
+    //download feature
+    const downloadPDF = () => {
+        const doc = new jsPDF();
+
+        // Title
+        doc.setFontSize(22);
+        doc.text("Planora AI - Design Proposal", 20, 20);
+
+        // Project Info
+        doc.setFontSize(12);
+        doc.text(`Project: ${style} ${houseType}`, 20, 30);
+        doc.text(`Estimated Bedrooms: ${bedrooms}`, 20, 37);
+        doc.line(20, 42, 190, 42); // Divider line
+
+        // Floor Details Table
+        // We use the 'floors' state that the AI just populated
+        floors.forEach((floor, index) => {
+            const startY = index === 0 ? 50 : doc.lastAutoTable.finalY + 20;
+
+            doc.setFontSize(16);
+            doc.text(floor.floorName || `Floor ${index + 1}`, 20, startY);
+
+            const tableRows = floor.rooms.map(room => [
+                room.name,
+                room.dimensions || "N/A",
+                room.description || ""
+            ]);
+
+            doc.autoTable({
+                startY: startY + 5,
+                head: [['Room Name', 'Estimated Dimensions', 'Features']],
+                body: tableRows,
+                theme: 'striped',
+                headStyles: { fillColor: [44, 62, 80] }, // Dark professional header
+            });
+        });
+
+        // Add the AI Suggestion / Rationale at the end
+        const finalY = doc.lastAutoTable.finalY + 15;
+        doc.setFontSize(14);
+        doc.text("Architectural Notes:", 20, finalY);
+        doc.setFontSize(10);
+        const splitSuggestion = doc.splitTextToSize(suggestion, 170);
+        doc.text(splitSuggestion, 20, finalY + 10);
+
+        // Save File
+        doc.save(`Planora_${houseType}_Design.pdf`);
     };
     // ---------- SHARED STYLES ----------
     const inputStyle = {
@@ -950,6 +1000,27 @@ function App() {
                                 </>
                             ) : "✦ Generate Design"}
                         </button>
+                        {/* Existing Generate Button */}
+                        <button onClick={generateFloorPlan} disabled={loadingPlan}>
+                            {loadingPlan ? "Generating..." : "Generate Design"}
+                        </button>
+
+                        {/* ✅ ADD THIS NEW BUTTON: */}
+                        {floors.length > 0 && (
+                            <button
+                                onClick={downloadPDF}
+                                style={{
+                                    marginLeft: '10px',
+                                    backgroundColor: '#27ae60', // Green color
+                                    color: 'white',
+                                    padding: '10px 20px',
+                                    borderRadius: '5px',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                📥 Download as PDF
+                            </button>
+                        )}
                         {floors.length > 0 && (
                             <button className="planora-btn" onClick={saveDesign} style={{ background: `linear-gradient(135deg, ${theme.gold} 0%, #b8870a 100%)`, color: theme.ink, padding: "14px 24px", border: "none", borderRadius: "999px", cursor: "pointer", fontWeight: 600, fontFamily: fontBody, fontSize: "0.95rem", boxShadow: `0 10px 24px ${theme.gold}40` }}>
                                 ⬡ Save ({saveCount}/10)
@@ -995,9 +1066,36 @@ function App() {
                                 </div>
                                 <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", paddingLeft: "38px" }}>
                                     {floor.rooms.map((room, j) => (
-                                        <div key={j} className="anim-scaleIn" style={{ padding: "14px 20px", border: `1.5px solid ${theme.forest}30`, background: `linear-gradient(135deg, ${theme.forest}08 0%, ${theme.terracotta}06 100%)`, borderRadius: "12px", color: theme.ink, fontWeight: 500, fontSize: "0.9rem", fontFamily: fontBody, animationDelay: `${j * 0.05}s`, display: "flex", alignItems: "center", gap: "8px" }}>
-                                            <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: theme.terracotta, flexShrink: 0 }} />
-                                            {room}
+                                        <div
+                                            key={j}
+                                            className="anim-scaleIn"
+                                            // We add a 'title' so that when you hover over the room, the AI description pops up!
+                                            title={room.description}
+                                            style={{
+                                                padding: "14px 20px",
+                                                border: `1.5px solid ${theme.forest}30`,
+                                                background: `linear-gradient(135deg, ${theme.forest}08 0%, ${theme.terracotta}06 100%)`,
+                                                borderRadius: "12px",
+                                                color: theme.ink,
+                                                fontSize: "0.9rem",
+                                                fontFamily: fontBody,
+                                                animationDelay: `${j * 0.05}s`,
+                                                display: "flex",
+                                                flexDirection: "column", // Stack the name and dimensions
+                                                gap: "2px",
+                                                minWidth: "160px"
+                                            }}
+                                        >
+                                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                                <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: theme.terracotta, flexShrink: 0 }} />
+                                                <strong style={{ fontWeight: 600 }}>{room.name}</strong>
+                                            </div>
+
+                                            {room.dimensions && (
+                                                <span style={{ fontSize: "0.75rem", color: theme.muted, marginLeft: "14px" }}>
+                                                    {room.dimensions}
+                                                </span>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
