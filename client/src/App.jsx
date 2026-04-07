@@ -274,7 +274,7 @@ function App() {
             }, 120000);
             // --- SAFETY NET END ---
 
-            const response = await fetch("https://planora-api.onrender.com/generate-plan", {
+            const response = await fetch("https://planora-api-4faq.onrender.com/generate-plan", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(formData),
